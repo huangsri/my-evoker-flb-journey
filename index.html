@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Arcarum Evoker FLB Tracker (Astra + Idean)</title>
+    <style>
+      :root {
+        --text: #222;
+        --muted: #555;
+        --border: #ddd;
+        --bg: #fff;
+        --progress-bg: #eee;
+        --checkbox-size: 16px;
+        --gap: 8px;
+        --radius: 6px;
+
+        /* element accents */
+        --fire: #e57373;
+        --earth: #8d6e63;
+        --water: #64b5f6;
+        --wind: #81c784;
+        --light: #ffd54f;
+        --dark: #90a4ae; /* fallback */
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 12px/1.35 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu,
+          Cantarell, Noto Sans, Arial, Apple Color Emoji, Segoe UI Emoji,
+          Segoe UI Symbol;
+      }
+      .page {
+        max-width: 980px;
+        margin: 12px auto;
+        padding: 8px 10px 12px;
+      }
+      header h1 {
+        font-size: 18px;
+        margin: 0 0 6px 0;
+        text-align: center;
+      }
+      header p {
+        margin: 0 0 10px 0;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      .sections {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      @media (min-width: 980px) {
+        .sections {
+          grid-template-columns: 1fr 1fr;
+          gap: 12px;
+        }
+      }
+      @media print {
+        .page {
+          max-width: none;
+          margin: 0;
+          padding: 0;
+        }
+        .sections {
+          grid-template-columns: 1fr !important;
+          gap: 8px;
+        }
+        header p {
+          display: none;
+        }
+        @page {
+          size: A4 portrait;
+          margin: 8mm;
+        }
+      }
+
+      section {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 8px;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      section h2 {
+        font-size: 14px;
+        margin: 0 0 6px 0;
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      /* item row */
+      .item {
+        padding: 6px 6px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-bottom: 6px;
+        display: block;
+        position: relative;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .item:last-child {
+        margin-bottom: 0;
+      }
+
+      .accent {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        border-radius: 8px 0 0 8px;
+        background: var(--dark);
+      }
+      .accent.fire {
+        background: var(--fire);
+      }
+      .accent.earth {
+        background: var(--earth);
+      }
+      .accent.water {
+        background: var(--water);
+      }
+      .accent.wind {
+        background: var(--wind);
+      }
+      .accent.light {
+        background: var(--light);
+      }
+
+      .row-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding-left: 6px; /* offset from accent */
+      }
+      .name {
+        font-weight: 700;
+      }
+      .stats {
+        color: var(--muted);
+        white-space: nowrap;
+      }
+
+      .progress {
+        margin: 6px 0 4px 6px;
+        height: 7px;
+        background: var(--progress-bg);
+        border-radius: 999px;
+        overflow: hidden;
+        border: 1px solid #e6e6e6;
+      }
+      .bar {
+        height: 100%;
+        background: linear-gradient(
+            90deg,
+            rgba(0, 0, 0, 0.07),
+            rgba(0, 0, 0, 0)
+          )
+          no-repeat;
+        position: relative;
+      }
+      .bar::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: currentColor;
+        opacity: 0.85;
+      }
+      /* color the bar by inheriting from item accent via color */
+      .item.fire .bar {
+        color: var(--fire);
+      }
+      .item.earth .bar {
+        color: var(--earth);
+      }
+      .item.water .bar {
+        color: var(--water);
+      }
+      .item.wind .bar {
+        color: var(--wind);
+      }
+      .item.light .bar {
+        color: var(--light);
+      }
+      .item .bar {
+        color: #9e9e9e;
+      } /* fallback */
+
+      /* chunk checkboxes */
+      .chunks {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 8px;
+        padding-left: 6px;
+        margin-top: 4px;
+      }
+      .chunk {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .chunk input[type='checkbox'] {
+        width: var(--checkbox-size);
+        height: var(--checkbox-size);
+        margin: 0;
+        border: 1px solid #bbb;
+        border-radius: 3px;
+        appearance: none;
+        -webkit-appearance: none;
+        background: #fff;
+        position: relative;
+        box-shadow: inset 0 0 0 2px #fff;
+      }
+      .chunk input[type='checkbox']:checked {
+        background: #444;
+        border-color: #444;
+      }
+      .chunk label {
+        font-size: 10px;
+        color: var(--muted);
+        user-select: none;
+      }
+
+      /* completed line */
+      .completed {
+        padding: 6px 6px 6px 6px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        color: #2e7d32;
+        border: 1px dashed #c8e6c9;
+        background: #f3fbf3;
+        border-radius: 8px;
+        margin-top: 6px;
+      }
+      @media print {
+        .completed {
+          color: #1b5e20;
+          background: #fff;
+          border: 1px dashed #9ccc9c;
+        }
+      }
+      .completed .name {
+        font-weight: 700;
+      }
+      .completed .extra {
+        color: #388e3c;
+      }
+      @media print {
+        .completed .extra {
+          color: #1b5e20;
+        }
+      }
+
+      /* footer */
+      footer {
+        margin-top: 10px;
+        border-top: 1px solid var(--border);
+        padding-top: 8px;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .footer-grid {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        align-items: start;
+      }
+      .notes {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .notes label {
+        font-weight: 600;
+      }
+      .notes textarea {
+        width: 100%;
+        min-height: 56px;
+        resize: vertical;
+        padding: 6px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        font: 12px/1.3 inherit;
+      }
+      .updated {
+        white-space: nowrap;
+        align-self: end;
+        font-size: 12px;
+      }
+      .updated .line {
+        display: inline-block;
+        min-width: 140px;
+        border-bottom: 1px solid var(--border);
+        padding: 2px 6px;
+      }
+
+      /* compact spacing on print */
+      @media print {
+        html,
+        body {
+          font-size: 11.5px;
+        }
+        .item {
+          margin-bottom: 5px;
+          padding: 5px 6px;
+        }
+        section {
+          padding: 6px;
+        }
+        .progress {
+          margin: 5px 0 3px 6px;
+          height: 6px;
+        }
+        .chunks {
+          margin-top: 3px;
+          gap: 4px 6px;
+        }
+        .chunk input[type='checkbox'] {
+          width: 14px;
+          height: 14px;
+        }
+        .chunk label {
+          font-size: 9.5px;
+        }
+        footer {
+          margin-top: 8px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header>
+        <h1>Arcarum Evoker FLB Tracker (Astra + Idean)</h1>
+        <p>
+          Tick the remaining chunks as you farm or buy. Progress bars reflect
+          current Have / Total.
+        </p>
+      </header>
+
+      <div class="sections">
+        <!-- Astras -->
+        <section aria-labelledby="astras-heading">
+          <h2 id="astras-heading">Astras</h2>
+
+          <!-- Flameborne Astra -->
+          <div class="item fire" aria-label="Flameborne Astra" data-key="flame">
+            <div class="accent fire" aria-hidden="true"></div>
+            <div class="row-head">
+              <div class="name">Flameborne Astra</div>
+              <div class="stats"></div>
+            </div>
+            <div class="progress" aria-hidden="true">
+              <div class="bar" style="width: 0%"></div>
+            </div>
+            <div class="chunks" aria-label="Remaining chunks">
+              <!-- 100 × 9 -->
+              <div class="chunk">
+                <input id="flame-100-1" type="checkbox" /><label
+                  for="flame-100-1"
+                  >100</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="flame-100-2" type="checkbox" /><label
+                  for="flame-100-2"
+                  >100</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="flame-100-3" type="checkbox" /><label
+                  for="flame-100-3"
+                  >100</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="flame-100-4" type="checkbox" /><label
+                  for="flame-100-4"
+                  >100</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="flame-100-5" type="checkbox" /><label
+                  for="flame-100-5"
+                  >100</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="flame-100-6" type="checkbox" /><label
+                  for="flame-100-6"
+                  >100</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="flame-100-7" type="checkbox" /><label
+                  for="flame-100-7"
+                  >100</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="flame-100-8" type="checkbox" /><label
+                  for="flame-100-8"
+                  >100</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="flame-100-9" type="checkbox" /><label
+                  for="flame-100-9"
+                  >100</label
+                >
+              </div>
+              <!-- remainder 27 -->
+              <div class="chunk">
+                <input id="flame-rem" type="checkbox" /><label for="flame-rem"
+                  >27</label
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Windborne Astra -->
+          <div class="item wind" aria-label="Windborne Astra" data-key="wind">
+            <div class="accent wind" aria-hidden="true"></div>
+            <div class="row-head">
+              <div class="name">Windborne Astra</div>
+              <div class="stats"></div>
+            </div>
+            <div class="progress" aria-hidden="true">
+              <div class="bar" style="width: 0%"></div>
+            </div>
+            <div class="chunks" aria-label="Remaining chunks">
+              <!-- 100 × 6 -->
+              <div class="chunk">
+                <input id="wind-100-1" type="checkbox" /><label for="wind-100-1"
+                  >100</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="wind-100-2" type="checkbox" /><label for="wind-100-2"
+                  >100</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="wind-100-3" type="checkbox" /><label for="wind-100-3"
+                  >100</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="wind-100-4" type="checkbox" /><label for="wind-100-4"
+                  >100</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="wind-100-5" type="checkbox" /><label for="wind-100-5"
+                  >100</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="wind-100-6" type="checkbox" /><label for="wind-100-6"
+                  >100</label
+                >
+              </div>
+              <!-- remainder 9 -->
+              <div class="chunk">
+                <input id="wind-rem" type="checkbox" /><label for="wind-rem"
+                  >9</label
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Earthborne Astra -->
+          <div
+            class="item earth"
+            aria-label="Earthborne Astra"
+            data-key="earth"
+          >
+            <div class="accent earth" aria-hidden="true"></div>
+            <div class="row-head">
+              <div class="name">Earthborne Astra</div>
+              <div class="stats"></div>
+            </div>
+            <div class="progress" aria-hidden="true">
+              <div class="bar" style="width: 0%"></div>
+            </div>
+            <div class="chunks" aria-label="Remaining chunks">
+              <!-- 100 × 4 -->
+              <div class="chunk">
+                <input id="earth-100-1" type="checkbox" /><label
+                  for="earth-100-1"
+                  >100</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="earth-100-2" type="checkbox" /><label
+                  for="earth-100-2"
+                  >100</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="earth-100-3" type="checkbox" /><label
+                  for="earth-100-3"
+                  >100</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="earth-100-4" type="checkbox" /><label
+                  for="earth-100-4"
+                  >100</label
+                >
+              </div>
+              <!-- remainder 86 -->
+              <div class="chunk">
+                <input id="earth-rem" type="checkbox" /><label for="earth-rem"
+                  >86</label
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Aquaborne Astra -->
+          <div class="item water" aria-label="Aquaborne Astra" data-key="aqua">
+            <div class="accent water" aria-hidden="true"></div>
+            <div class="row-head">
+              <div class="name">Aquaborne Astra</div>
+              <div class="stats"></div>
+            </div>
+            <div class="progress" aria-hidden="true">
+              <div class="bar" style="width: 0%"></div>
+            </div>
+            <div class="chunks" aria-label="Remaining chunks">
+              <!-- 100 × 4 -->
+              <div class="chunk">
+                <input id="aqua-100-1" type="checkbox" /><label for="aqua-100-1"
+                  >100</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="aqua-100-2" type="checkbox" /><label for="aqua-100-2"
+                  >100</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="aqua-100-3" type="checkbox" /><label for="aqua-100-3"
+                  >100</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="aqua-100-4" type="checkbox" /><label for="aqua-100-4"
+                  >100</label
+                >
+              </div>
+              <!-- remainder 86 -->
+              <div class="chunk">
+                <input id="aqua-rem" type="checkbox" /><label for="aqua-rem"
+                  >86</label
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Lightborne Astra -->
+          <div
+            class="item light"
+            aria-label="Lightborne Astra"
+            data-key="lightAstra"
+          >
+            <div class="accent light" aria-hidden="true"></div>
+            <div class="row-head">
+              <div class="name">Lightborne Astra</div>
+              <div class="stats"></div>
+            </div>
+            <div class="progress" aria-hidden="true">
+              <div class="bar" style="width: 0%"></div>
+            </div>
+            <div class="chunks" aria-label="Remaining chunks">
+              <!-- 100 × 3 -->
+              <div class="chunk">
+                <input id="light-100-1" type="checkbox" /><label
+                  for="light-100-1"
+                  >100</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="light-100-2" type="checkbox" /><label
+                  for="light-100-2"
+                  >100</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="light-100-3" type="checkbox" /><label
+                  for="light-100-3"
+                  >100</label
+                >
+              </div>
+              <!-- remainder 10 -->
+              <div class="chunk">
+                <input id="light-rem" type="checkbox" /><label for="light-rem"
+                  >10</label
+                >
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Ideans -->
+        <section aria-labelledby="ideans-heading">
+          <h2 id="ideans-heading">Ideans</h2>
+
+          <!-- Star Idean -->
+          <div class="item light" aria-label="Star Idean" data-key="star">
+            <div class="accent light" aria-hidden="true"></div>
+            <div class="row-head">
+              <div class="name">Star Idean</div>
+              <div class="stats"></div>
+            </div>
+            <div class="progress" aria-hidden="true">
+              <div class="bar" style="width: 0%"></div>
+            </div>
+            <div class="chunks" aria-label="Remaining chunks">
+              <!-- 10 × 10 -->
+              <div class="chunk">
+                <input id="star-10-1" type="checkbox" /><label for="star-10-1"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="star-10-2" type="checkbox" /><label for="star-10-2"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="star-10-3" type="checkbox" /><label for="star-10-3"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="star-10-4" type="checkbox" /><label for="star-10-4"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="star-10-5" type="checkbox" /><label for="star-10-5"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="star-10-6" type="checkbox" /><label for="star-10-6"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="star-10-7" type="checkbox" /><label for="star-10-7"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="star-10-8" type="checkbox" /><label for="star-10-8"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="star-10-9" type="checkbox" /><label for="star-10-9"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="star-10-10" type="checkbox" /><label for="star-10-10"
+                  >10</label
+                >
+              </div>
+              <!-- remainder 9 -->
+              <div class="chunk">
+                <input id="star-rem" type="checkbox" /><label for="star-rem"
+                  >9</label
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Sun Idean -->
+          <div class="item fire" aria-label="Sun Idean" data-key="sun">
+            <div class="accent fire" aria-hidden="true"></div>
+            <div class="row-head">
+              <div class="name">Sun Idean</div>
+              <div class="stats"></div>
+            </div>
+            <div class="progress" aria-hidden="true">
+              <div class="bar" style="width: 0%"></div>
+            </div>
+            <div class="chunks" aria-label="Remaining chunks">
+              <!-- 10 × 9 -->
+              <div class="chunk">
+                <input id="sun-10-1" type="checkbox" /><label for="sun-10-1"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="sun-10-2" type="checkbox" /><label for="sun-10-2"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="sun-10-3" type="checkbox" /><label for="sun-10-3"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="sun-10-4" type="checkbox" /><label for="sun-10-4"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="sun-10-5" type="checkbox" /><label for="sun-10-5"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="sun-10-6" type="checkbox" /><label for="sun-10-6"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="sun-10-7" type="checkbox" /><label for="sun-10-7"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="sun-10-8" type="checkbox" /><label for="sun-10-8"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="sun-10-9" type="checkbox" /><label for="sun-10-9"
+                  >10</label
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Devil Idean -->
+          <div class="item fire" aria-label="Devil Idean" data-key="devil">
+            <div class="accent fire" aria-hidden="true"></div>
+            <div class="row-head">
+              <div class="name">Devil Idean</div>
+              <div class="stats"></div>
+            </div>
+            <div class="progress" aria-hidden="true">
+              <div class="bar" style="width: 0%"></div>
+            </div>
+            <div class="chunks" aria-label="Remaining chunks">
+              <!-- 10 × 7 -->
+              <div class="chunk">
+                <input id="devil-10-1" type="checkbox" /><label for="devil-10-1"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="devil-10-2" type="checkbox" /><label for="devil-10-2"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="devil-10-3" type="checkbox" /><label for="devil-10-3"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="devil-10-4" type="checkbox" /><label for="devil-10-4"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="devil-10-5" type="checkbox" /><label for="devil-10-5"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="devil-10-6" type="checkbox" /><label for="devil-10-6"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="devil-10-7" type="checkbox" /><label for="devil-10-7"
+                  >10</label
+                >
+              </div>
+              <!-- remainder 6 -->
+              <div class="chunk">
+                <input id="devil-rem" type="checkbox" /><label for="devil-rem"
+                  >6</label
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Justice Idean -->
+          <div class="item water" aria-label="Justice Idean" data-key="justice">
+            <div class="accent water" aria-hidden="true"></div>
+            <div class="row-head">
+              <div class="name">Justice Idean</div>
+              <div class="stats"></div>
+            </div>
+            <div class="progress" aria-hidden="true">
+              <div class="bar" style="width: 0%"></div>
+            </div>
+            <div class="chunks" aria-label="Remaining chunks">
+              <!-- 10 × 5 -->
+              <div class="chunk">
+                <input id="justice-10-1" type="checkbox" /><label
+                  for="justice-10-1"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="justice-10-2" type="checkbox" /><label
+                  for="justice-10-2"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="justice-10-3" type="checkbox" /><label
+                  for="justice-10-3"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="justice-10-4" type="checkbox" /><label
+                  for="justice-10-4"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="justice-10-5" type="checkbox" /><label
+                  for="justice-10-5"
+                  >10</label
+                >
+              </div>
+              <!-- remainder 5 -->
+              <div class="chunk">
+                <input id="justice-rem" type="checkbox" /><label
+                  for="justice-rem"
+                  >5</label
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Tower Idean -->
+          <div class="item earth" aria-label="Tower Idean" data-key="tower">
+            <div class="accent earth" aria-hidden="true"></div>
+            <div class="row-head">
+              <div class="name">Tower Idean</div>
+              <div class="stats"></div>
+            </div>
+            <div class="progress" aria-hidden="true">
+              <div class="bar" style="width: 0%"></div>
+            </div>
+            <div class="chunks" aria-label="Remaining chunks">
+              <!-- 10 × 4 -->
+              <div class="chunk">
+                <input id="tower-10-1" type="checkbox" /><label for="tower-10-1"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="tower-10-2" type="checkbox" /><label for="tower-10-2"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="tower-10-3" type="checkbox" /><label for="tower-10-3"
+                  >10</label
+                >
+              </div>
+              <div class="chunk">
+                <input id="tower-10-4" type="checkbox" /><label for="tower-10-4"
+                  >10</label
+                >
+              </div>
+              <!-- remainder 1 -->
+              <div class="chunk">
+                <input id="tower-rem" type="checkbox" /><label for="tower-rem"
+                  >1</label
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Completed Ideans (compact lines) -->
+          <div
+            class="completed"
+            aria-label="Completed Ideans"
+            data-key="temperance"
+          >
+            <div class="name">Temperance Idean</div>
+            <div class="stats"></div>
+            <div class="extra"></div>
+          </div>
+          <div
+            class="completed"
+            aria-label="Completed Ideans"
+            data-key="hanged"
+          >
+            <div class="name">Hanged Man Idean</div>
+            <div class="stats"></div>
+            <div class="extra"></div>
+          </div>
+        </section>
+      </div>
+
+      <footer>
+        <div class="footer-grid">
+          <div class="notes">
+            <label for="notes">Notes</label>
+            <textarea
+              id="notes"
+              placeholder="Add quick farming notes..."
+            ></textarea>
+          </div>
+          <div class="updated">
+            Updated on:
+            <span class="line" contenteditable="true" aria-label="Updated date"
+              >(click to edit)</span
+            >
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        // --- START EDITING HERE ---
+        const itemData = {
+          astras: {
+            flame: { have: 196, total: 1091 },
+            aqua: { have: 380, total: 831 },
+            earth: { have: 531, total: 971 },
+            wind: { have: 272, total: 831 },
+            lightAstra: { have: 471, total: 756 },
+          },
+          ideans: {
+            justice: { have: 476, total: 502 },
+            hanged: { have: 194, total: 130 },
+            temperance: { have: 544, total: 502 },
+            devil: { have: 454, total: 502 },
+            tower: { have: 493, total: 502 },
+            star: { have: 382, total: 462 },
+            sun: { have: 140, total: 230 },
+          },
+        }
+        // --- STOP EDITING HERE ---
+
+        const updateItem = (key, data) => {
+          const item = document.querySelector(`[data-key='${key}']`)
+          if (!item) return
+
+          const statsEl = item.querySelector('.stats')
+          const barEl = item.querySelector('.bar')
+          const extraEl = item.querySelector('.extra')
+
+          const { have, total } = data
+
+          if (item.classList.contains('completed')) {
+            const extra = Math.max(0, have - total)
+            statsEl.textContent = `Have ${have} / Total ${total}`
+            if (extraEl) {
+              extraEl.textContent = `Complete (+${extra} extra)`
+            }
+          } else {
+            const remaining = Math.max(0, total - have)
+            const percentage =
+              total > 0 ? Math.min(100, (have / total) * 100) : 0
+            statsEl.textContent = `Have ${have} / Total ${total} (Remaining ${remaining})`
+            if (barEl) {
+              barEl.style.width = `${percentage}%`
+            }
+          }
+        }
+
+        for (const key in itemData.astras) {
+          updateItem(key, itemData.astras[key])
+        }
+
+        for (const key in itemData.ideans) {
+          updateItem(key, itemData.ideans[key])
+        }
+      })
+    </script>
+  </body>
+</html>
